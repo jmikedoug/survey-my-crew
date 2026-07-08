@@ -1,86 +1,70 @@
+## Scope
 
-# Poll-Your-People — Build Plan
+Five asks, grouped into shippable slices. Public respond stays public; creating/duplicating/exporting requires an account. Respondents see a soft "Create an account to save your poll history" prompt.
 
-A mobile-first web app (installable PWA-style) where you create a survey about anything (deodorants, books, movies…), share a link with friends, collect responses anonymously, and view a clean results report. Built so user accounts, affiliate links, and native mobile can slot in later without a rewrite.
+## Slice 1 — Accounts (Email + Google)
 
-## Scope for v1 (this build)
+- Enable Supabase auth: email/password + Google (managed). No auto-confirm.
+- New `/auth` public route (sign in / sign up tabs, Google button).
+- `profiles` table (id → auth.users, display_name, created_at) auto-created via trigger on signup.
+- `responses.user_id` (nullable) — filled when a signed-in user takes a poll, powering "polls you took".
+- `surveys.user_id` — filled on create; keep `creator_token` for legacy/anon migration.
+- Root nav: show sign-in state (avatar menu with Sign out, My surveys, Polls I took).
+- Migrate existing localStorage `creator_token` surveys: on first sign-in, offer one-tap claim (server fn matches token → sets user_id).
+- Protected routes under `_authenticated/`: `/new`, `/mine`, `/s/$slug/results` (creator-only), `/s/$slug/export`.
 
-In:
-- Create a survey: title, description, category, questions (rating 1–5, multiple choice, short text, yes/no).
-- Share via unique link (`/s/:slug`).
-- Friends respond without an account (optional first name).
-- Results page: per-question aggregates (avg rating, bar charts, response list).
-- Optional affiliate product links attached to a survey/question (e.g. Amazon/Etsy URL + label), rendered with a clear "affiliate" disclosure and click tracking.
-- Home: list of surveys you created on this device (tracked via a local `creator_token` stored in `localStorage`, later migratable to a real `user_id`).
-- Mobile-first layout, sleek/minimal, Tiffany blue + violet + white theme, WCAG AA.
+## Slice 2 — My surveys & Polls I took
 
-Out (later):
-- Real user accounts, profile pics, phone numbers, addresses, passwords, payments, shipping — not needed for v1, but the schema leaves room.
-- Native iOS/Android — the PWA works on phones now; wrap with Capacitor later.
-- AI-generated report summaries — easy add-on once results exist.
+- `/mine` — list surveys the user created (with response counts, links to results/edit/duplicate/export).
+- `/history` — list surveys the user has responded to (via `responses.user_id`).
+- Landing page nudges signed-out respondents post-submit: "Create an account to save this poll."
 
-## Design system
+## Slice 3 — Duplicate a survey
 
-Tokens in `src/styles.css` (oklch):
-- `--primary` = violet, `--accent` = Tiffany blue, `--background` = white, soft neutral borders.
-- Gradient token `--gradient-brand` (Tiffany → violet) for hero + CTAs.
-- Rounded-2xl cards, generous spacing, Inter or similar clean sans (loaded via `<link>` in `__root.tsx`).
-- Semantic HTML (`<main>`, `<nav>`, `<article>`, `<button>`), visible focus rings, `aria-label` on icon buttons, contrast ≥ 4.5:1.
+- Server fn `duplicateSurvey({ slug })` — auth required. Copies survey + questions (not responses/answers) under the caller's account with new slug. Copies affiliate links too.
+- "Duplicate for my audience" button on results page + `/mine` row action.
 
-## Backend (Lovable Cloud)
+## Slice 4 — Export answers
 
-Enable Cloud. Tables:
+- CSV: server fn streams `text/csv` — one row per response, columns = respondent, submitted_at, then one column per question (choice/text/rating/yes-no rendered as string).
+- PDF summary: server-rendered HTML → client-side print-to-PDF via a `/s/$slug/results/print` route styled for print (avoids adding a heavy PDF lib on the Worker). Button labeled "Download PDF" triggers `window.print()`.
+- Both gated to survey owner.
 
-- `surveys` — id, slug (unique), title, description, category, creator_token (text, nullable user_id later), created_at.
-- `questions` — id, survey_id, position, type (`rating|choice|text|yes_no`), prompt, options (jsonb, nullable).
-- `responses` — id, survey_id, respondent_name (nullable), created_at.
-- `answers` — id, response_id, question_id, value_number, value_text, value_choice.
-- `affiliate_links` — id, survey_id (nullable), question_id (nullable), label, url, source (`amazon|etsy|creator|other`).
-- `affiliate_clicks` — id, affiliate_link_id, clicked_at, referrer.
+## Slice 5 — AI product matching (respondent suggests a product)
 
-RLS on from day one, with `GRANT`s. v1 policies (no auth yet):
-- `surveys`, `questions`, `affiliate_links`: `SELECT` to `anon` + `authenticated`.
-- Inserts to `surveys/questions` allowed to `anon` for now (guarded by `creator_token`); tighten to `auth.uid()` when accounts land.
-- `responses`/`answers`: `INSERT` to `anon`, `SELECT` only via a security-definer RPC `get_survey_results(slug)` so raw rows aren't scrape-able.
-- `affiliate_clicks`: `INSERT` to `anon`, no public `SELECT`.
+- New question type: `product_suggestion`. Respondent types a product name.
+- On blur / "Find matches", client calls `suggestProductMatches` server fn → Lovable AI Gateway (google/gemini-2.5-flash) with a strict JSON schema prompt: returns up to 5 candidates `{title, brand, category, guessed_url}`.
+- Respondent picks one match (or "None of these — use my link" with a URL field, or "Skip").
+- Stored on `answers` as `value_text` = chosen title, `value_choice` = candidate id, plus a new `answers.suggested_url` column for the raw/user URL.
+- Affiliate override: server fn `resolveAffiliateUrl(url)` — if the domain matches a known partner (Amazon, Etsy) and the survey owner has an affiliate tag configured on their profile (`profiles.amazon_tag`, `profiles.etsy_tag`), rewrite the URL (strip existing tag, inject ours) before storing / rendering. User-provided affiliate params are stripped.
+- Results page shows suggested products as cards, click-tracked through existing `/api/public/aff/$id` (new affiliate_links rows created on the fly per unique product per survey).
 
-Data access: TanStack Start server functions (`createServerFn`) for reads/writes, publishable-key client for public reads, `supabaseAdmin` reserved for later admin work.
+## Slice 6 — Foundations for audience targeting (later)
 
-## Routes
+Not built now, but structured so it drops in cleanly:
 
-- `/` — landing + "Create survey" CTA + list of my surveys (from localStorage tokens).
-- `/new` — survey builder (add/remove/reorder questions).
-- `/s/$slug` — respondent view (fill and submit).
-- `/s/$slug/results` — aggregated report + affiliate link cards.
-- `/about` — what this is, affiliate disclosure.
-- Each route has its own `head()` metadata (title/description/OG).
-- `sitemap.xml` + `robots.txt` added per template.
+- `audiences` table (owner_id, name, criteria jsonb — age_range, gender, location, ethnicity, hair_type, free-form tags).
+- `survey_audiences` join table (survey_id → audience_id, quota).
+- `profiles` gets demographic opt-in fields (nullable, self-reported): age_range, gender, location_region, ethnicity[], hair_type, interests[].
+- `/discover` route stub for signed-in users → shows polls whose audience criteria match their profile. Empty state today; wired to real matching in a future turn.
+- No paid distribution / panel integration yet — this is opt-in matching among app users.
 
-## Affiliate handling
+## Technical notes
 
-- Links stored in DB, rendered as cards with a small "Affiliate link — I may earn a commission" note.
-- Click goes through `/api/public/aff/$id` server route which records a row in `affiliate_clicks` then 302-redirects to the target URL. Works for Amazon, Etsy, creator sites uniformly.
+- All new tables get `GRANT` + RLS in the same migration. Owner policies via `auth.uid()`; responses readable by survey owner via `EXISTS` on surveys.
+- Existing anonymous flows keep working — auth is additive.
+- Google OAuth uses `lovable.auth.signInWithOAuth` with `redirect_uri: window.location.origin`; provider configured via `supabase--configure_social_auth`.
+- Lovable AI calls: server-side only, using `LOVABLE_API_KEY` (already set).
+- No new external secrets required.
 
-## Future-proofing
+## Order of execution
 
-- `creator_token` column becomes optional; add `user_id uuid references auth.users` later and a migration to backfill.
-- Auth (email + Google) drops in via Lovable Cloud without schema churn.
-- Capacitor wrap turns the PWA into iOS/Android apps.
-- Reports upgrade: add an AI summary server fn using Lovable AI Gateway.
+1. Migration: auth-adjacent tables (`profiles`, columns on `surveys`/`responses`/`answers`, `audiences`, `survey_audiences`) + RLS + trigger.
+2. Configure Google auth.
+3. Auth UI + `_authenticated` layout + nav state.
+4. Claim-legacy-surveys flow.
+5. `/mine`, `/history`, duplicate, CSV + PDF export.
+6. AI product matching + affiliate override.
+7. `/discover` stub.
 
-## Tech notes
-
-- React 19 + TanStack Start (already scaffolded), Tailwind v4, shadcn/ui components (Button, Card, Input, RadioGroup, Slider, Progress, Sonner toasts), Recharts for result bars.
-- Zod validation on every server fn input.
-- No secrets needed for v1 (no Amazon API — plain affiliate URLs the user pastes).
-
-## First implementation slice
-
-1. Enable Lovable Cloud, run schema migration + grants + RLS + `get_survey_results` RPC.
-2. Design tokens + shared layout (nav, footer with disclosure).
-3. Home + `/new` builder.
-4. `/s/$slug` respondent flow.
-5. `/s/$slug/results` with charts + affiliate cards + click-tracking route.
-6. SEO (`head()` per route, sitemap, robots), accessibility pass.
-
-Approve this and I'll start with step 1.
+Ask me to start, or say which slice to defer.
