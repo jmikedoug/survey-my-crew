@@ -93,6 +93,7 @@ export type Database = {
           id: string
           question_id: string
           response_id: string
+          suggested_url: string | null
           value_choice: string | null
           value_number: number | null
           value_text: string | null
@@ -101,6 +102,7 @@ export type Database = {
           id?: string
           question_id: string
           response_id: string
+          suggested_url?: string | null
           value_choice?: string | null
           value_number?: number | null
           value_text?: string | null
@@ -109,6 +111,7 @@ export type Database = {
           id?: string
           question_id?: string
           response_id?: string
+          suggested_url?: string | null
           value_choice?: string | null
           value_number?: number | null
           value_text?: string | null
@@ -129,6 +132,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audiences: {
+        Row: {
+          created_at: string
+          criteria: Json
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criteria?: Json
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criteria?: Json
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          age_range: string | null
+          amazon_tag: string | null
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          ethnicity: string[] | null
+          etsy_tag: string | null
+          gender: string | null
+          hair_type: string | null
+          id: string
+          interests: string[] | null
+          location_region: string | null
+          updated_at: string
+        }
+        Insert: {
+          age_range?: string | null
+          amazon_tag?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          ethnicity?: string[] | null
+          etsy_tag?: string | null
+          gender?: string | null
+          hair_type?: string | null
+          id: string
+          interests?: string[] | null
+          location_region?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age_range?: string | null
+          amazon_tag?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          ethnicity?: string[] | null
+          etsy_tag?: string | null
+          gender?: string | null
+          hair_type?: string | null
+          id?: string
+          interests?: string[] | null
+          location_region?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       questions: {
         Row: {
@@ -171,22 +249,61 @@ export type Database = {
           id: string
           respondent_name: string | null
           survey_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           respondent_name?: string | null
           survey_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           respondent_name?: string | null
           survey_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "responses_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_audiences: {
+        Row: {
+          audience_id: string
+          created_at: string
+          quota: number | null
+          survey_id: string
+        }
+        Insert: {
+          audience_id: string
+          created_at?: string
+          quota?: number | null
+          survey_id: string
+        }
+        Update: {
+          audience_id?: string
+          created_at?: string
+          quota?: number | null
+          survey_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_audiences_audience_id_fkey"
+            columns: ["audience_id"]
+            isOneToOne: false
+            referencedRelation: "audiences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_audiences_survey_id_fkey"
             columns: ["survey_id"]
             isOneToOne: false
             referencedRelation: "surveys"
@@ -232,11 +349,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_surveys: { Args: { _token: string }; Returns: number }
+      duplicate_survey: {
+        Args: { _new_slug: string; _slug: string }
+        Returns: string
+      }
       get_survey_results: { Args: { _slug: string }; Returns: Json }
     }
     Enums: {
       affiliate_source: "amazon" | "etsy" | "creator" | "other"
-      question_type: "rating" | "choice" | "text" | "yes_no"
+      question_type:
+        | "rating"
+        | "choice"
+        | "text"
+        | "yes_no"
+        | "product_suggestion"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -365,7 +492,13 @@ export const Constants = {
   public: {
     Enums: {
       affiliate_source: ["amazon", "etsy", "creator", "other"],
-      question_type: ["rating", "choice", "text", "yes_no"],
+      question_type: [
+        "rating",
+        "choice",
+        "text",
+        "yes_no",
+        "product_suggestion",
+      ],
     },
   },
 } as const
