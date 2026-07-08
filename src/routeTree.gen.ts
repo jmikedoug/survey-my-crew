@@ -18,6 +18,7 @@ import { Route as SSlugRouteImport } from './routes/s.$slug'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
 import { Route as AuthenticatedMineRouteImport } from './routes/_authenticated/mine'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
+import { Route as AuthenticatedDiscoverRouteImport } from './routes/_authenticated/discover'
 import { Route as SSlugResultsRouteImport } from './routes/s.$slug.results'
 import { Route as ApiPublicAffIdRouteImport } from './routes/api/public/aff.$id'
 
@@ -65,6 +66,11 @@ const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDiscoverRoute = AuthenticatedDiscoverRouteImport.update({
+  id: '/discover',
+  path: '/discover',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const SSlugResultsRoute = SSlugResultsRouteImport.update({
   id: '/results',
   path: '/results',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/discover': typeof AuthenticatedDiscoverRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/mine': typeof AuthenticatedMineRoute
   '/new': typeof AuthenticatedNewRoute
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/discover': typeof AuthenticatedDiscoverRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/mine': typeof AuthenticatedMineRoute
   '/new': typeof AuthenticatedNewRoute
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_authenticated/discover': typeof AuthenticatedDiscoverRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/mine': typeof AuthenticatedMineRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/sitemap.xml'
+    | '/discover'
     | '/history'
     | '/mine'
     | '/new'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/sitemap.xml'
+    | '/discover'
     | '/history'
     | '/mine'
     | '/new'
@@ -146,6 +157,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/sitemap.xml'
+    | '/_authenticated/discover'
     | '/_authenticated/history'
     | '/_authenticated/mine'
     | '/_authenticated/new'
@@ -229,6 +241,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/discover': {
+      id: '/_authenticated/discover'
+      path: '/discover'
+      fullPath: '/discover'
+      preLoaderRoute: typeof AuthenticatedDiscoverRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/s/$slug/results': {
       id: '/s/$slug/results'
       path: '/results'
@@ -247,12 +266,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDiscoverRoute: typeof AuthenticatedDiscoverRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedMineRoute: typeof AuthenticatedMineRoute
   AuthenticatedNewRoute: typeof AuthenticatedNewRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDiscoverRoute: AuthenticatedDiscoverRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedMineRoute: AuthenticatedMineRoute,
   AuthenticatedNewRoute: AuthenticatedNewRoute,
