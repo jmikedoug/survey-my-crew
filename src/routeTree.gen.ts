@@ -20,6 +20,7 @@ import { Route as AuthenticatedMineRouteImport } from './routes/_authenticated/m
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedDiscoverRouteImport } from './routes/_authenticated/discover'
 import { Route as SSlugResultsRouteImport } from './routes/s.$slug.results'
+import { Route as SSlugPrintRouteImport } from './routes/s.$slug.print'
 import { Route as ApiPublicAffIdRouteImport } from './routes/api/public/aff.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -76,6 +77,11 @@ const SSlugResultsRoute = SSlugResultsRouteImport.update({
   path: '/results',
   getParentRoute: () => SSlugRoute,
 } as any)
+const SSlugPrintRoute = SSlugPrintRouteImport.update({
+  id: '/print',
+  path: '/print',
+  getParentRoute: () => SSlugRoute,
+} as any)
 const ApiPublicAffIdRoute = ApiPublicAffIdRouteImport.update({
   id: '/api/public/aff/$id',
   path: '/api/public/aff/$id',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/mine': typeof AuthenticatedMineRoute
   '/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
+  '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
 }
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/mine': typeof AuthenticatedMineRoute
   '/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
+  '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
 }
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/_authenticated/mine': typeof AuthenticatedMineRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
+  '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
 }
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/mine'
     | '/new'
     | '/s/$slug'
+    | '/s/$slug/print'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/mine'
     | '/new'
     | '/s/$slug'
+    | '/s/$slug/print'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
   id:
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mine'
     | '/_authenticated/new'
     | '/s/$slug'
+    | '/s/$slug/print'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
   fileRoutesById: FileRoutesById
@@ -255,6 +267,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugResultsRouteImport
       parentRoute: typeof SSlugRoute
     }
+    '/s/$slug/print': {
+      id: '/s/$slug/print'
+      path: '/print'
+      fullPath: '/s/$slug/print'
+      preLoaderRoute: typeof SSlugPrintRouteImport
+      parentRoute: typeof SSlugRoute
+    }
     '/api/public/aff/$id': {
       id: '/api/public/aff/$id'
       path: '/api/public/aff/$id'
@@ -283,10 +302,12 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface SSlugRouteChildren {
+  SSlugPrintRoute: typeof SSlugPrintRoute
   SSlugResultsRoute: typeof SSlugResultsRoute
 }
 
 const SSlugRouteChildren: SSlugRouteChildren = {
+  SSlugPrintRoute: SSlugPrintRoute,
   SSlugResultsRoute: SSlugResultsRoute,
 }
 
