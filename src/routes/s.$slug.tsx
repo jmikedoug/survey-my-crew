@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate, useRouter, notFound } from "@tansta
 import { useServerFn } from "@tanstack/react-start";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Copy, Share2 } from "lucide-react";
+import { Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -304,5 +304,3 @@ function QuestionField({
     />
   );
 }
-
-export { Copy };
