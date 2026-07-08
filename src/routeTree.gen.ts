@@ -16,6 +16,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
+import { Route as AuthenticatedMineRouteImport } from './routes/_authenticated/mine'
 import { Route as SSlugResultsRouteImport } from './routes/s.$slug.results'
 import { Route as ApiPublicAffIdRouteImport } from './routes/api/public/aff.$id'
 
@@ -53,6 +54,11 @@ const AuthenticatedNewRoute = AuthenticatedNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMineRoute = AuthenticatedMineRouteImport.update({
+  id: '/mine',
+  path: '/mine',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const SSlugResultsRoute = SSlugResultsRouteImport.update({
   id: '/results',
   path: '/results',
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/mine': typeof AuthenticatedMineRoute
   '/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/mine': typeof AuthenticatedMineRoute
   '/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_authenticated/mine': typeof AuthenticatedMineRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/sitemap.xml'
+    | '/mine'
     | '/new'
     | '/s/$slug'
     | '/s/$slug/results'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/sitemap.xml'
+    | '/mine'
     | '/new'
     | '/s/$slug'
     | '/s/$slug/results'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/auth'
     | '/sitemap.xml'
+    | '/_authenticated/mine'
     | '/_authenticated/new'
     | '/s/$slug'
     | '/s/$slug/results'
@@ -191,6 +203,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/mine': {
+      id: '/_authenticated/mine'
+      path: '/mine'
+      fullPath: '/mine'
+      preLoaderRoute: typeof AuthenticatedMineRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/s/$slug/results': {
       id: '/s/$slug/results'
       path: '/results'
@@ -209,10 +228,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedMineRoute: typeof AuthenticatedMineRoute
   AuthenticatedNewRoute: typeof AuthenticatedNewRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedMineRoute: AuthenticatedMineRoute,
   AuthenticatedNewRoute: AuthenticatedNewRoute,
 }
 
