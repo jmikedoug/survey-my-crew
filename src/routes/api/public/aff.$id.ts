@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 
 export const Route = createFileRoute("/api/public/aff/$id")({
@@ -30,7 +30,10 @@ export const Route = createFileRoute("/api/public/aff/$id")({
           })
           .then(() => {}, () => {});
 
-        throw redirect({ href: link.url as string });
+        return new Response(null, {
+          status: 302,
+          headers: { Location: link.url as string },
+        });
       },
     },
   },
