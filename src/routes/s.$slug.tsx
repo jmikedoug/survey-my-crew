@@ -281,7 +281,7 @@ function QuestionField({
         className="space-y-2"
         aria-label={q.prompt}
       >
-        {(q.options ?? []).map((o) => (
+        {((q.options as string[] | null) ?? []).map((o: string) => (
           <label
             key={o}
             className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 text-sm hover:bg-accent/30 has-[:checked]:border-primary has-[:checked]:bg-accent/40"
