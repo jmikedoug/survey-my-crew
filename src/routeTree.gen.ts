@@ -10,22 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as NewRouteImport } from './routes/new'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
+import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
 import { Route as SSlugResultsRouteImport } from './routes/s.$slug.results'
 import { Route as ApiPublicAffIdRouteImport } from './routes/api/public/aff.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NewRoute = NewRouteImport.update({
-  id: '/new',
-  path: '/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -38,6 +34,10 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -47,6 +47,11 @@ const SSlugRoute = SSlugRouteImport.update({
   id: '/s/$slug',
   path: '/s/$slug',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedNewRoute = AuthenticatedNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const SSlugResultsRoute = SSlugResultsRouteImport.update({
   id: '/results',
@@ -63,8 +68,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
-  '/new': typeof NewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
@@ -73,8 +78,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
-  '/new': typeof NewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
@@ -82,10 +87,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
-  '/new': typeof NewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_authenticated/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
@@ -96,8 +102,8 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
-    | '/new'
     | '/sitemap.xml'
+    | '/new'
     | '/s/$slug'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
@@ -106,18 +112,19 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
-    | '/new'
     | '/sitemap.xml'
+    | '/new'
     | '/s/$slug'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/about'
     | '/auth'
-    | '/new'
     | '/sitemap.xml'
+    | '/_authenticated/new'
     | '/s/$slug'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
@@ -125,9 +132,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
-  NewRoute: typeof NewRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SSlugRoute: typeof SSlugRouteWithChildren
   ApiPublicAffIdRoute: typeof ApiPublicAffIdRoute
@@ -140,13 +147,6 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/new': {
-      id: '/new'
-      path: '/new'
-      fullPath: '/new'
-      preLoaderRoute: typeof NewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -163,6 +163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -176,6 +183,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/s/$slug'
       preLoaderRoute: typeof SSlugRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/new': {
+      id: '/_authenticated/new'
+      path: '/new'
+      fullPath: '/new'
+      preLoaderRoute: typeof AuthenticatedNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/s/$slug/results': {
       id: '/s/$slug/results'
@@ -194,6 +208,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedNewRoute: typeof AuthenticatedNewRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedNewRoute: AuthenticatedNewRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 interface SSlugRouteChildren {
   SSlugResultsRoute: typeof SSlugResultsRoute
 }
@@ -206,9 +231,9 @@ const SSlugRouteWithChildren = SSlugRoute._addFileChildren(SSlugRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
-  NewRoute: NewRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SSlugRoute: SSlugRouteWithChildren,
   ApiPublicAffIdRoute: ApiPublicAffIdRoute,

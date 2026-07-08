@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolveAffiliateUrl } from "@/lib/product-matching.functions";
 
 function serverSupabase() {
   return createClient(
@@ -23,7 +25,7 @@ function slugify(title: string) {
 }
 
 const questionSchema = z.object({
-  type: z.enum(["rating", "choice", "text", "yes_no"]),
+  type: z.enum(["rating", "choice", "text", "yes_no", "product_suggestion"]),
   prompt: z.string().trim().min(1).max(280),
   options: z.array(z.string().trim().min(1).max(80)).max(10).optional(),
 });
@@ -46,10 +48,11 @@ const createSchema = z.object({
     .optional(),
 });
 
-export const createSurvey = createServerFn({ method: "POST" })
+export const createSurveyAsUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => createSchema.parse(input))
-  .handler(async ({ data }) => {
-    const supabase = serverSupabase();
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase;
     const slug = slugify(data.title);
 
     const { data: survey, error: sErr } = await supabase
@@ -60,6 +63,7 @@ export const createSurvey = createServerFn({ method: "POST" })
         description: data.description ?? null,
         category: data.category ?? null,
         creator_token: data.creator_token,
+        user_id: context.userId,
       })
       .select("id, slug, title, created_at")
       .single();
@@ -122,6 +126,7 @@ const answerSchema = z.object({
   value_number: z.number().nullable().optional(),
   value_text: z.string().max(2000).nullable().optional(),
   value_choice: z.string().max(120).nullable().optional(),
+  suggested_url: z.string().trim().url().max(600).nullable().optional(),
 });
 
 const submitSchema = z.object({
@@ -133,10 +138,24 @@ const submitSchema = z.object({
 export const submitResponse = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => submitSchema.parse(input))
   .handler(async ({ data }) => {
+    return doSubmit(data, null);
+  });
+
+export const submitResponseAsUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => submitSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    return doSubmit(data, context.userId);
+  });
+
+async function doSubmit(
+  data: z.infer<typeof submitSchema>,
+  userId: string | null,
+) {
     const supabase = serverSupabase();
     const { data: survey, error: sErr } = await supabase
       .from("surveys")
-      .select("id")
+      .select("id, user_id")
       .eq("slug", data.slug)
       .maybeSingle();
     if (sErr) throw new Error(sErr.message);
@@ -147,22 +166,30 @@ export const submitResponse = createServerFn({ method: "POST" })
       .insert({
         survey_id: survey.id,
         respondent_name: data.respondent_name || null,
+        user_id: userId,
       })
       .select("id")
       .single();
     if (rErr || !response) throw new Error(rErr?.message ?? "Failed to record response");
 
-    const rows = data.answers.map((a) => ({
-      response_id: response.id,
-      question_id: a.question_id,
-      value_number: a.value_number ?? null,
-      value_text: a.value_text ?? null,
-      value_choice: a.value_choice ?? null,
-    }));
+    const rows = await Promise.all(
+      data.answers.map(async (a) => {
+        let url = a.suggested_url ?? null;
+        if (url) url = await resolveAffiliateUrl(url, survey.user_id ?? null);
+        return {
+          response_id: response.id,
+          question_id: a.question_id,
+          value_number: a.value_number ?? null,
+          value_text: a.value_text ?? null,
+          value_choice: a.value_choice ?? null,
+          suggested_url: url,
+        };
+      }),
+    );
     const { error: aErr } = await supabase.from("answers").insert(rows);
     if (aErr) throw new Error(aErr.message);
     return { ok: true };
-  });
+}
 
 export const getResults = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => z.object({ slug: z.string().min(1) }).parse(input))
@@ -185,13 +212,14 @@ export const getResults = createServerFn({ method: "GET" })
       questions: Array<{
         id: string;
         position: number;
-        type: "rating" | "choice" | "text" | "yes_no";
+        type: "rating" | "choice" | "text" | "yes_no" | "product_suggestion";
         prompt: string;
         options: string[] | null;
         answer_count: number;
         avg_rating: number | null;
         choice_counts: Record<string, number> | null;
         text_answers: string[] | null;
+        product_suggestions: Array<{ title: string; url: string | null; votes: number }> | null;
       }>;
     };
   });
