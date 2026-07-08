@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
 import { Route as SSlugResultsRouteImport } from './routes/s.$slug.results'
+import { Route as ApiPublicAffIdRouteImport } from './routes/api/public/aff.$id'
 
 const NewRoute = NewRouteImport.update({
   id: '/new',
@@ -40,6 +41,11 @@ const SSlugResultsRoute = SSlugResultsRouteImport.update({
   path: '/results',
   getParentRoute: () => SSlugRoute,
 } as any)
+const ApiPublicAffIdRoute = ApiPublicAffIdRouteImport.update({
+  id: '/api/public/aff/$id',
+  path: '/api/public/aff/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/new': typeof NewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
+  '/api/public/aff/$id': typeof ApiPublicAffIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/new': typeof NewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
+  '/api/public/aff/$id': typeof ApiPublicAffIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,33 @@ export interface FileRoutesById {
   '/new': typeof NewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
+  '/api/public/aff/$id': typeof ApiPublicAffIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/new' | '/s/$slug' | '/s/$slug/results'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/new'
+    | '/s/$slug'
+    | '/s/$slug/results'
+    | '/api/public/aff/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/new' | '/s/$slug' | '/s/$slug/results'
-  id: '__root__' | '/' | '/about' | '/new' | '/s/$slug' | '/s/$slug/results'
+  to:
+    | '/'
+    | '/about'
+    | '/new'
+    | '/s/$slug'
+    | '/s/$slug/results'
+    | '/api/public/aff/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/new'
+    | '/s/$slug'
+    | '/s/$slug/results'
+    | '/api/public/aff/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +104,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   NewRoute: typeof NewRoute
   SSlugRoute: typeof SSlugRouteWithChildren
+  ApiPublicAffIdRoute: typeof ApiPublicAffIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -115,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugResultsRouteImport
       parentRoute: typeof SSlugRoute
     }
+    '/api/public/aff/$id': {
+      id: '/api/public/aff/$id'
+      path: '/api/public/aff/$id'
+      fullPath: '/api/public/aff/$id'
+      preLoaderRoute: typeof ApiPublicAffIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -133,6 +169,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   NewRoute: NewRoute,
   SSlugRoute: SSlugRouteWithChildren,
+  ApiPublicAffIdRoute: ApiPublicAffIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
