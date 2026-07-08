@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -16,6 +17,11 @@ import { Route as SSlugRouteImport } from './routes/s.$slug'
 import { Route as SSlugResultsRouteImport } from './routes/s.$slug.results'
 import { Route as ApiPublicAffIdRouteImport } from './routes/api/public/aff.$id'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/new': typeof NewRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/new': typeof NewRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/new': typeof NewRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/new'
+    | '/sitemap.xml'
     | '/s/$slug'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/new'
+    | '/sitemap.xml'
     | '/s/$slug'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
@@ -94,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/new'
+    | '/sitemap.xml'
     | '/s/$slug'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
@@ -103,12 +115,20 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   NewRoute: typeof NewRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SSlugRoute: typeof SSlugRouteWithChildren
   ApiPublicAffIdRoute: typeof ApiPublicAffIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/new': {
       id: '/new'
       path: '/new'
@@ -168,6 +188,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   NewRoute: NewRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   SSlugRoute: SSlugRouteWithChildren,
   ApiPublicAffIdRoute: ApiPublicAffIdRoute,
 }
