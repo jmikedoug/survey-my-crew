@@ -1,6 +1,26 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { LogOut, User as UserIcon } from "lucide-react";
+
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/use-auth";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function SiteNav() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  async function onSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    router.navigate({ to: "/auth", replace: true });
+  }
+
   return (
     <nav
       aria-label="Primary"
@@ -17,18 +37,43 @@ export function SiteNav() {
           </span>
         </Link>
         <div className="flex items-center gap-1 text-sm">
-          <Link
-            to="/about"
-            className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
+          <Link to="/about" className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             About
           </Link>
-          <Link
-            to="/new"
-            className="rounded-full bg-gradient-brand px-4 py-2 text-sm font-medium text-white shadow-brand transition-transform hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            New survey
-          </Link>
+          {loading ? null : user ? (
+            <>
+              <Link to="/new" className="rounded-full bg-gradient-brand px-4 py-2 text-sm font-medium text-white shadow-brand transition-transform hover:-translate-y-px">
+                New survey
+              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background hover:bg-accent/40" aria-label="Account menu">
+                  <UserIcon className="h-4 w-4" aria-hidden="true" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[180px]">
+                  <DropdownMenuLabel className="truncate text-xs">
+                    {user.email ?? "Signed in"}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild><Link to="/mine">My surveys</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/history">Polls I took</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/discover">Discover</Link></DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onSignOut}>
+                    <LogOut className="mr-2 h-3.5 w-3.5" /> Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <>
+              <Link to="/auth" className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:text-foreground">
+                Sign in
+              </Link>
+              <Link to="/auth" search={{ redirect: "/new" }} className="rounded-full bg-gradient-brand px-4 py-2 text-sm font-medium text-white shadow-brand transition-transform hover:-translate-y-px">
+                New survey
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>

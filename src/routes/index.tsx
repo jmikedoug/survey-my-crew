@@ -1,10 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles, Users, BarChart3 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { listMySurveys, type MySurvey } from "@/lib/creator-token";
+import { useAuth } from "@/lib/use-auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,10 +20,9 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const [mine, setMine] = useState<MySurvey[]>([]);
-  useEffect(() => {
-    setMine(listMySurveys());
-  }, []);
+  const { user, loading } = useAuth();
+  const primaryTo = user ? "/new" : "/auth";
+  const primarySearch = user ? undefined : ({ redirect: "/new" } as const);
 
   return (
     <div>
@@ -51,9 +49,15 @@ function Index() {
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="rounded-full bg-gradient-brand text-white shadow-brand hover:opacity-95">
-              <Link to="/new">
-                Create a survey <ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
-              </Link>
+              {primarySearch ? (
+                <Link to={primaryTo} search={primarySearch}>
+                  Create a survey <ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
+                </Link>
+              ) : (
+                <Link to={primaryTo}>
+                  Create a survey <ArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
+                </Link>
+              )}
             </Button>
             <Button asChild variant="ghost" size="lg" className="rounded-full">
               <Link to="/about">How it works</Link>
@@ -83,47 +87,21 @@ function Index() {
       </section>
 
       <section className="mx-auto max-w-3xl px-4 pb-16">
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">Your surveys</h2>
-          {mine.length > 0 && (
-            <span className="text-xs text-muted-foreground">Saved on this device</span>
+        <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
+          {loading ? (
+            "Loading…"
+          ) : user ? (
+            <>
+              Welcome back.{" "}
+              <Link to="/mine" className="font-medium text-primary hover:underline">See my surveys →</Link>
+            </>
+          ) : (
+            <>
+              <Link to="/auth" className="font-medium text-primary hover:underline">Create an account</Link>{" "}
+              to save your surveys, take polls with history, and export answers.
+            </>
           )}
-        </div>
-        {mine.length === 0 ? (
-          <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
-            You haven’t made any yet.{" "}
-            <Link to="/new" className="font-medium text-primary hover:underline">
-              Start your first one →
-            </Link>
-          </Card>
-        ) : (
-          <ul className="space-y-2">
-            {mine.map((s) => (
-              <li key={s.slug}>
-                <Card className="flex items-center justify-between p-4">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{s.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(s.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button asChild variant="outline" size="sm">
-                      <Link to="/s/$slug" params={{ slug: s.slug }}>
-                        Open
-                      </Link>
-                    </Button>
-                    <Button asChild size="sm">
-                      <Link to="/s/$slug/results" params={{ slug: s.slug }}>
-                        Results
-                      </Link>
-                    </Button>
-                  </div>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
+        </Card>
       </section>
     </div>
   );

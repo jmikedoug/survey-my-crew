@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as NewRouteImport } from './routes/new'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
+import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
+import { Route as AuthenticatedMineRouteImport } from './routes/_authenticated/mine'
+import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
+import { Route as AuthenticatedDiscoverRouteImport } from './routes/_authenticated/discover'
 import { Route as SSlugResultsRouteImport } from './routes/s.$slug.results'
+import { Route as SSlugPrintRouteImport } from './routes/s.$slug.print'
 import { Route as ApiPublicAffIdRouteImport } from './routes/api/public/aff.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -22,14 +28,18 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NewRoute = NewRouteImport.update({
-  id: '/new',
-  path: '/new',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -42,9 +52,34 @@ const SSlugRoute = SSlugRouteImport.update({
   path: '/s/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedNewRoute = AuthenticatedNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMineRoute = AuthenticatedMineRouteImport.update({
+  id: '/mine',
+  path: '/mine',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDiscoverRoute = AuthenticatedDiscoverRouteImport.update({
+  id: '/discover',
+  path: '/discover',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const SSlugResultsRoute = SSlugResultsRouteImport.update({
   id: '/results',
   path: '/results',
+  getParentRoute: () => SSlugRoute,
+} as any)
+const SSlugPrintRoute = SSlugPrintRouteImport.update({
+  id: '/print',
+  path: '/print',
   getParentRoute: () => SSlugRoute,
 } as any)
 const ApiPublicAffIdRoute = ApiPublicAffIdRouteImport.update({
@@ -56,28 +91,44 @@ const ApiPublicAffIdRoute = ApiPublicAffIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/new': typeof NewRoute
+  '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/discover': typeof AuthenticatedDiscoverRoute
+  '/history': typeof AuthenticatedHistoryRoute
+  '/mine': typeof AuthenticatedMineRoute
+  '/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
+  '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/new': typeof NewRoute
+  '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/discover': typeof AuthenticatedDiscoverRoute
+  '/history': typeof AuthenticatedHistoryRoute
+  '/mine': typeof AuthenticatedMineRoute
+  '/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
+  '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
-  '/new': typeof NewRoute
+  '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_authenticated/discover': typeof AuthenticatedDiscoverRoute
+  '/_authenticated/history': typeof AuthenticatedHistoryRoute
+  '/_authenticated/mine': typeof AuthenticatedMineRoute
+  '/_authenticated/new': typeof AuthenticatedNewRoute
   '/s/$slug': typeof SSlugRouteWithChildren
+  '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
   '/api/public/aff/$id': typeof ApiPublicAffIdRoute
 }
@@ -86,35 +137,52 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
-    | '/new'
+    | '/auth'
     | '/sitemap.xml'
+    | '/discover'
+    | '/history'
+    | '/mine'
+    | '/new'
     | '/s/$slug'
+    | '/s/$slug/print'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
-    | '/new'
+    | '/auth'
     | '/sitemap.xml'
+    | '/discover'
+    | '/history'
+    | '/mine'
+    | '/new'
     | '/s/$slug'
+    | '/s/$slug/print'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/about'
-    | '/new'
+    | '/auth'
     | '/sitemap.xml'
+    | '/_authenticated/discover'
+    | '/_authenticated/history'
+    | '/_authenticated/mine'
+    | '/_authenticated/new'
     | '/s/$slug'
+    | '/s/$slug/print'
     | '/s/$slug/results'
     | '/api/public/aff/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
-  NewRoute: typeof NewRoute
+  AuthRoute: typeof AuthRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SSlugRoute: typeof SSlugRouteWithChildren
   ApiPublicAffIdRoute: typeof ApiPublicAffIdRoute
@@ -129,11 +197,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/new': {
-      id: '/new'
-      path: '/new'
-      fullPath: '/new'
-      preLoaderRoute: typeof NewRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -141,6 +209,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -157,11 +232,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/new': {
+      id: '/_authenticated/new'
+      path: '/new'
+      fullPath: '/new'
+      preLoaderRoute: typeof AuthenticatedNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/mine': {
+      id: '/_authenticated/mine'
+      path: '/mine'
+      fullPath: '/mine'
+      preLoaderRoute: typeof AuthenticatedMineRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/history': {
+      id: '/_authenticated/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthenticatedHistoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/discover': {
+      id: '/_authenticated/discover'
+      path: '/discover'
+      fullPath: '/discover'
+      preLoaderRoute: typeof AuthenticatedDiscoverRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/s/$slug/results': {
       id: '/s/$slug/results'
       path: '/results'
       fullPath: '/s/$slug/results'
       preLoaderRoute: typeof SSlugResultsRouteImport
+      parentRoute: typeof SSlugRoute
+    }
+    '/s/$slug/print': {
+      id: '/s/$slug/print'
+      path: '/print'
+      fullPath: '/s/$slug/print'
+      preLoaderRoute: typeof SSlugPrintRouteImport
       parentRoute: typeof SSlugRoute
     }
     '/api/public/aff/$id': {
@@ -174,11 +284,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDiscoverRoute: typeof AuthenticatedDiscoverRoute
+  AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
+  AuthenticatedMineRoute: typeof AuthenticatedMineRoute
+  AuthenticatedNewRoute: typeof AuthenticatedNewRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDiscoverRoute: AuthenticatedDiscoverRoute,
+  AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
+  AuthenticatedMineRoute: AuthenticatedMineRoute,
+  AuthenticatedNewRoute: AuthenticatedNewRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 interface SSlugRouteChildren {
+  SSlugPrintRoute: typeof SSlugPrintRoute
   SSlugResultsRoute: typeof SSlugResultsRoute
 }
 
 const SSlugRouteChildren: SSlugRouteChildren = {
+  SSlugPrintRoute: SSlugPrintRoute,
   SSlugResultsRoute: SSlugResultsRoute,
 }
 
@@ -186,8 +315,9 @@ const SSlugRouteWithChildren = SSlugRoute._addFileChildren(SSlugRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
-  NewRoute: NewRoute,
+  AuthRoute: AuthRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SSlugRoute: SSlugRouteWithChildren,
   ApiPublicAffIdRoute: ApiPublicAffIdRoute,
@@ -195,13 +325,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
