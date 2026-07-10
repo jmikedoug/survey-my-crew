@@ -21,8 +21,10 @@ export async function resolveAffiliateUrl(rawUrl: string, ownerId: string | null
     }
     if (!ownerId) return u.toString();
 
-    const supabase = serverSupabase();
-    const { data: profile } = await supabase
+    // Profiles are restricted to the owning user; use the admin client for this
+    // narrow server-side lookup of the survey owner's affiliate tags.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("amazon_tag, etsy_tag")
       .eq("id", ownerId)
