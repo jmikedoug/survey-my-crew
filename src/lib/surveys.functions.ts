@@ -154,6 +154,7 @@ async function doSubmit(
   client?: ReturnType<typeof serverSupabase>,
 ) {
     const supabase = client ?? serverSupabase();
+    const responseId = crypto.randomUUID();
     const { data: survey, error: sErr } = await supabase
       .from("surveys")
       .select("id, user_id")
@@ -165,20 +166,21 @@ async function doSubmit(
     const { data: response, error: rErr } = await supabase
       .from("responses")
       .insert({
+        id: responseId,
         survey_id: survey.id,
         respondent_name: data.respondent_name || null,
         user_id: userId,
       })
       .select("id")
-      .single();
-    if (rErr || !response) throw new Error(rErr?.message ?? "Failed to record response");
+      .maybeSingle();
+    if (rErr) throw new Error(rErr.message);
 
     const rows = await Promise.all(
       data.answers.map(async (a) => {
         let url = a.suggested_url ?? null;
         if (url) url = await resolveAffiliateUrl(url, survey.user_id ?? null);
         return {
-          response_id: response.id,
+          response_id: response?.id ?? responseId,
           question_id: a.question_id,
           value_number: a.value_number ?? null,
           value_text: a.value_text ?? null,
