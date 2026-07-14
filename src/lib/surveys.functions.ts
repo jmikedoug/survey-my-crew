@@ -145,14 +145,15 @@ export const submitResponseAsUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => submitSchema.parse(input))
   .handler(async ({ data, context }) => {
-    return doSubmit(data, context.userId);
+    return doSubmit(data, context.userId, context.supabase);
   });
 
 async function doSubmit(
   data: z.infer<typeof submitSchema>,
   userId: string | null,
+  client?: ReturnType<typeof serverSupabase>,
 ) {
-    const supabase = serverSupabase();
+    const supabase = client ?? serverSupabase();
     const { data: survey, error: sErr } = await supabase
       .from("surveys")
       .select("id, user_id")
