@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { resolveAffiliateUrl } from "@/lib/product-matching.functions";
 
 function serverSupabase() {
   return createClient(
@@ -138,59 +137,17 @@ const submitSchema = z.object({
 export const submitResponse = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => submitSchema.parse(input))
   .handler(async ({ data }) => {
-    return doSubmit(data, null);
+    const { submitSurveyResponse } = await import("@/lib/survey-submit.server");
+    return submitSurveyResponse(data, null);
   });
 
 export const submitResponseAsUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => submitSchema.parse(input))
   .handler(async ({ data, context }) => {
-    return doSubmit(data, context.userId, context.supabase);
+    const { submitSurveyResponse } = await import("@/lib/survey-submit.server");
+    return submitSurveyResponse(data, context.userId, context.supabase);
   });
-
-async function doSubmit(
-  data: z.infer<typeof submitSchema>,
-  userId: string | null,
-  client?: ReturnType<typeof serverSupabase>,
-) {
-    const supabase = client ?? serverSupabase();
-    const responseId = crypto.randomUUID();
-    const { data: survey, error: sErr } = await supabase
-      .from("surveys")
-      .select("id, user_id")
-      .eq("slug", data.slug)
-      .maybeSingle();
-    if (sErr) throw new Error(sErr.message);
-    if (!survey) throw new Error("Survey not found");
-
-    const { error: rErr } = await supabase
-      .from("responses")
-      .insert({
-        id: responseId,
-        survey_id: survey.id,
-        respondent_name: data.respondent_name || null,
-        user_id: userId,
-      });
-    if (rErr) throw new Error(rErr.message);
-
-    const rows = await Promise.all(
-      data.answers.map(async (a) => {
-        let url = a.suggested_url ?? null;
-        if (url) url = await resolveAffiliateUrl(url, survey.user_id ?? null);
-        return {
-          response_id: responseId,
-          question_id: a.question_id,
-          value_number: a.value_number ?? null,
-          value_text: a.value_text ?? null,
-          value_choice: a.value_choice ?? null,
-          suggested_url: url,
-        };
-      }),
-    );
-    const { error: aErr } = await supabase.from("answers").insert(rows);
-    if (aErr) throw new Error(aErr.message);
-    return { ok: true };
-}
 
 export const getResults = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => z.object({ slug: z.string().min(1) }).parse(input))
