@@ -163,16 +163,14 @@ async function doSubmit(
     if (sErr) throw new Error(sErr.message);
     if (!survey) throw new Error("Survey not found");
 
-    const { data: response, error: rErr } = await supabase
+    const { error: rErr } = await supabase
       .from("responses")
       .insert({
         id: responseId,
         survey_id: survey.id,
         respondent_name: data.respondent_name || null,
         user_id: userId,
-      })
-      .select("id")
-      .maybeSingle();
+      });
     if (rErr) throw new Error(rErr.message);
 
     const rows = await Promise.all(
@@ -180,7 +178,7 @@ async function doSubmit(
         let url = a.suggested_url ?? null;
         if (url) url = await resolveAffiliateUrl(url, survey.user_id ?? null);
         return {
-          response_id: response?.id ?? responseId,
+          response_id: responseId,
           question_id: a.question_id,
           value_number: a.value_number ?? null,
           value_text: a.value_text ?? null,
