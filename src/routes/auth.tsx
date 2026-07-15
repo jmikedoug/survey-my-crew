@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/lib/use-auth";
-import { getCreatorToken } from "@/lib/creator-token";
+import { getCreatorToken, getRespondentToken } from "@/lib/creator-token";
 
 const searchSchema = z.object({ redirect: z.string().optional() }).partial();
 
@@ -40,9 +40,12 @@ function AuthPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      // Best-effort claim of any anon surveys created on this device.
+      // Best-effort claim of any anon surveys AND responses created on this device.
       supabase.rpc("claim_surveys", { _token: getCreatorToken() }).then(({ data }) => {
         if (typeof data === "number" && data > 0) toast.success(`Claimed ${data} earlier survey${data === 1 ? "" : "s"}.`);
+      });
+      supabase.rpc("claim_responses", { _token: getRespondentToken() }).then(({ data }) => {
+        if (typeof data === "number" && data > 0) toast.success(`Linked ${data} earlier poll response${data === 1 ? "" : "s"} to your account.`);
       });
       navigate({ to: target as string });
     }

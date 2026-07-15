@@ -1,70 +1,79 @@
-## Scope
+## What you've said we'd do "later" — recap
 
-Five asks, grouped into shippable slices. Public respond stays public; creating/duplicating/exporting requires an account. Respondents see a soft "Create an account to save your poll history" prompt.
+**Slice 6 — Audience targeting foundations** (from `.lovable/plan.md`)
+- `audiences` table, `survey_audiences` join, demographic opt-in fields on `profiles`
+- `/discover` route for signed-in users to answer polls matched to them
+- No paid panels — opt-in matching among app users only
 
-## Slice 1 — Accounts (Email + Google)
+**Slice 5 leftovers — AI product matching polish**
+- `product_suggestion` question type end-to-end in the respondent UI
+- Affiliate override on Amazon/Etsy using `profiles.amazon_tag` / `etsy_tag`
+- Product cards on the results page, click-tracked
 
-- Enable Supabase auth: email/password + Google (managed). No auto-confirm.
-- New `/auth` public route (sign in / sign up tabs, Google button).
-- `profiles` table (id → auth.users, display_name, created_at) auto-created via trigger on signup.
-- `responses.user_id` (nullable) — filled when a signed-in user takes a poll, powering "polls you took".
-- `surveys.user_id` — filled on create; keep `creator_token` for legacy/anon migration.
-- Root nav: show sign-in state (avatar menu with Sign out, My surveys, Polls I took).
-- Migrate existing localStorage `creator_token` surveys: on first sign-in, offer one-tap claim (server fn matches token → sets user_id).
-- Protected routes under `_authenticated/`: `/new`, `/mine`, `/s/$slug/results` (creator-only), `/s/$slug/export`.
+**Anonymous → account nudges**
+- Post-submit "Create an account to save this poll" prompt
+- Claim-legacy-surveys UI on first sign-in (server fn already exists)
 
-## Slice 2 — My surveys & Polls I took
+**Other parked polish** (not selected — noted for later)
+- CSV/PDF export UI polish
+- Category browse UX beyond current results
 
-- `/mine` — list surveys the user created (with response counts, links to results/edit/duplicate/export).
-- `/history` — list surveys the user has responded to (via `responses.user_id`).
-- Landing page nudges signed-out respondents post-submit: "Create an account to save this poll."
+---
 
-## Slice 3 — Duplicate a survey
+## This iteration — three shippable slices
 
-- Server fn `duplicateSurvey({ slug })` — auth required. Copies survey + questions (not responses/answers) under the caller's account with new slug. Copies affiliate links too.
-- "Duplicate for my audience" button on results page + `/mine` row action.
+### Slice A · Audience targeting v1 (minimal + browse+filter + optional profile)
 
-## Slice 4 — Export answers
+**Profile page**
+- New route `/_authenticated/profile` — form with three nullable fields: `age_range` (enum: under_18 / 18_24 / 25_34 / 35_44 / 45_54 / 55_plus), `gender` (free-text short + "prefer not to say"), `location_region` (free-text, e.g. "US-CA", "UK", etc.)
+- Save via `updateMyProfile` server fn (`requireSupabaseAuth`)
+- Nav gets a "Profile" link in the avatar menu
 
-- CSV: server fn streams `text/csv` — one row per response, columns = respondent, submitted_at, then one column per question (choice/text/rating/yes-no rendered as string).
-- PDF summary: server-rendered HTML → client-side print-to-PDF via a `/s/$slug/results/print` route styled for print (avoids adding a heavy PDF lib on the Worker). Button labeled "Download PDF" triggers `window.print()`.
-- Both gated to survey owner.
+**Audience builder (creator side)**
+- Add "Audience" step to `/new` (optional): pick target age ranges (multi), gender (any/specific), location contains (free-text substring). Stored as one `audiences` row + `survey_audiences` link with the new survey
+- Existing `audiences` / `survey_audiences` tables already exist — add columns if missing (`age_ranges text[]`, `gender text`, `location_contains text`) and RLS/GRANTs
 
-## Slice 5 — AI product matching (respondent suggests a product)
+**Discover feed (browse + filter)**
+- `/_authenticated/discover` becomes real: category tabs across top (All, Beauty, Food, Tech, …) + toggle "Only polls looking for me"
+- When toggle is on, filter by matching `survey_audiences` criteria against caller's profile (via a `discover_polls` RPC). When off, show recent public polls
+- Empty state when profile is incomplete: "Fill in your profile to see polls looking for you" → link to /profile
 
-- New question type: `product_suggestion`. Respondent types a product name.
-- On blur / "Find matches", client calls `suggestProductMatches` server fn → Lovable AI Gateway (google/gemini-2.5-flash) with a strict JSON schema prompt: returns up to 5 candidates `{title, brand, category, guessed_url}`.
-- Respondent picks one match (or "None of these — use my link" with a URL field, or "Skip").
-- Stored on `answers` as `value_text` = chosen title, `value_choice` = candidate id, plus a new `answers.suggested_url` column for the raw/user URL.
-- Affiliate override: server fn `resolveAffiliateUrl(url)` — if the domain matches a known partner (Amazon, Etsy) and the survey owner has an affiliate tag configured on their profile (`profiles.amazon_tag`, `profiles.etsy_tag`), rewrite the URL (strip existing tag, inject ours) before storing / rendering. User-provided affiliate params are stripped.
-- Results page shows suggested products as cards, click-tracked through existing `/api/public/aff/$id` (new affiliate_links rows created on the fly per unique product per survey).
+**Why**: matches your answers — minimal fields, category browse, optional profile, no forced onboarding. Ships value even for users who never fill out demographics (they just see recent polls).
 
-## Slice 6 — Foundations for audience targeting (later)
+### Slice B · Product suggestion polish
 
-Not built now, but structured so it drops in cleanly:
+- Respondent flow for `product_suggestion` questions:
+  - Text input → debounced "Find matches" button → server fn `suggestProductMatches` (Lovable AI Gateway, gemini-2.5-flash, strict JSON schema)
+  - Show up to 5 candidate cards; user picks one, or "None — use my link" (URL field), or "Skip"
+  - Store choice in `answers` (title, suggested_url)
+- Results page renders "Suggested products" as clickable cards linking through `/api/public/aff/$id` (creates `affiliate_links` rows on the fly per unique URL+survey)
+- Affiliate override already lives in `survey-submit.server.ts` — verify it fires and add tests via Playwright
 
-- `audiences` table (owner_id, name, criteria jsonb — age_range, gender, location, ethnicity, hair_type, free-form tags).
-- `survey_audiences` join table (survey_id → audience_id, quota).
-- `profiles` gets demographic opt-in fields (nullable, self-reported): age_range, gender, location_region, ethnicity[], hair_type, interests[].
-- `/discover` route stub for signed-in users → shows polls whose audience criteria match their profile. Empty state today; wired to real matching in a future turn.
-- No paid distribution / panel integration yet — this is opt-in matching among app users.
+**Why**: the schema is there but the respondent-side UX is stubbed. This closes the loop and makes the affiliate revenue path real.
+
+### Slice C · Anonymous → account conversion
+
+- After a signed-out respondent submits, show a soft banner on the thanks screen: "Create an account to save your poll history and get matched to more polls" → CTA to `/auth?redirect=/history`
+- On first sign-in, if `localStorage.creator_token` exists, quietly call `claimAnonSurveys({ token })` and toast "Claimed N surveys you made before signing in"
+- Add same claim call for anonymous responses: store a `respondent_token` in localStorage per submit (like creator_token), and add `claim_responses(_token)` RPC + server fn that fills `responses.user_id` on first sign-in
+
+**Why**: converts drive-by respondents/creators into accounts without gating the public flow.
+
+---
 
 ## Technical notes
 
-- All new tables get `GRANT` + RLS in the same migration. Owner policies via `auth.uid()`; responses readable by survey owner via `EXISTS` on surveys.
-- Existing anonymous flows keep working — auth is additive.
-- Google OAuth uses `lovable.auth.signInWithOAuth` with `redirect_uri: window.location.origin`; provider configured via `supabase--configure_social_auth`.
-- Lovable AI calls: server-side only, using `LOVABLE_API_KEY` (already set).
-- No new external secrets required.
+- New RPC `discover_polls(_only_matching bool, _category text)` — SECURITY DEFINER, joins `surveys` + `survey_audiences` + `audiences` + caller's `profiles`, returns `{slug, title, category, response_count, match_reason}`. `SET search_path = public`.
+- New RPC `claim_responses(_token text)` — matches SECURITY DEFINER pattern used by `claim_surveys`.
+- All new columns/tables: GRANT + RLS in the same migration. `audiences` policies: owner-only. `profiles` demographic columns keep existing RLS (already scoped to `auth.uid()`).
+- No new external secrets. Product matching uses existing `LOVABLE_API_KEY`.
+- Discover uses `useSuspenseQuery` + loader `ensureQueryData` under `_authenticated/` (safe to call protected server fns there).
 
 ## Order of execution
 
-1. Migration: auth-adjacent tables (`profiles`, columns on `surveys`/`responses`/`answers`, `audiences`, `survey_audiences`) + RLS + trigger.
-2. Configure Google auth.
-3. Auth UI + `_authenticated` layout + nav state.
-4. Claim-legacy-surveys flow.
-5. `/mine`, `/history`, duplicate, CSV + PDF export.
-6. AI product matching + affiliate override.
-7. `/discover` stub.
+1. Migration: profile demographic columns, `audiences`/`survey_audiences` column additions, `discover_polls` + `claim_responses` RPCs, RLS/GRANTs
+2. Slice A: `/profile`, audience step in `/new`, real `/discover`
+3. Slice B: respondent product_suggestion UI, results product cards, affiliate verification
+4. Slice C: post-submit account nudge, auto-claim on sign-in for both surveys and responses
 
-Ask me to start, or say which slice to defer.
+Tell me to start, or say "skip B" / "just A" / "reorder" and I'll re-plan.

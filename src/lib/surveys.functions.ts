@@ -131,6 +131,7 @@ const answerSchema = z.object({
 const submitSchema = z.object({
   slug: z.string().min(1),
   respondent_name: z.string().trim().max(60).optional().nullable(),
+  respondent_token: z.string().min(8).max(128).optional().nullable(),
   answers: z.array(answerSchema).min(1).max(60),
 });
 

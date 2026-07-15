@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getSurvey, submitResponse, submitResponseAsUser } from "@/lib/surveys.functions";
+import { getRespondentToken } from "@/lib/creator-token";
 import { suggestProductMatches } from "@/lib/product-matching.functions";
 import { useAuth } from "@/lib/use-auth";
 
@@ -129,7 +130,14 @@ function RespondPage() {
 
     setSubmitting(true);
     try {
-      const payload = { data: { slug, respondent_name: name.trim() || null, answers } };
+      const payload = {
+        data: {
+          slug,
+          respondent_name: name.trim() || null,
+          respondent_token: user ? null : getRespondentToken(),
+          answers,
+        },
+      };
       if (user) {
         await submitAuthed(payload);
       } else {

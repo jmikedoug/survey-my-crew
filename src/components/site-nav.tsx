@@ -57,6 +57,7 @@ export function SiteNav() {
                   <DropdownMenuItem asChild><Link to="/mine">My surveys</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link to="/history">Polls I took</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild><Link to="/discover">Discover</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild><Link to="/profile">Profile</Link></DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={onSignOut}>
                     <LogOut className="mr-2 h-3.5 w-3.5" /> Sign out

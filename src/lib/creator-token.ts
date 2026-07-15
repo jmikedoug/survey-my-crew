@@ -5,6 +5,7 @@
 
 const TOKEN_KEY = "ppp.creator_token";
 const SURVEYS_KEY = "ppp.my_surveys";
+const RESPONDENT_TOKEN_KEY = "ppp.respondent_token";
 
 function randomToken() {
   const bytes = new Uint8Array(24);
@@ -18,6 +19,16 @@ export function getCreatorToken(): string {
   if (!t) {
     t = randomToken();
     localStorage.setItem(TOKEN_KEY, t);
+  }
+  return t;
+}
+
+export function getRespondentToken(): string {
+  if (typeof window === "undefined") return "";
+  let t = localStorage.getItem(RESPONDENT_TOKEN_KEY);
+  if (!t) {
+    t = randomToken();
+    localStorage.setItem(RESPONDENT_TOKEN_KEY, t);
   }
   return t;
 }

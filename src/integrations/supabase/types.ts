@@ -248,6 +248,7 @@ export type Database = {
           created_at: string
           id: string
           respondent_name: string | null
+          respondent_token: string | null
           survey_id: string
           user_id: string | null
         }
@@ -255,6 +256,7 @@ export type Database = {
           created_at?: string
           id?: string
           respondent_name?: string | null
+          respondent_token?: string | null
           survey_id: string
           user_id?: string | null
         }
@@ -262,6 +264,7 @@ export type Database = {
           created_at?: string
           id?: string
           respondent_name?: string | null
+          respondent_token?: string | null
           survey_id?: string
           user_id?: string | null
         }
@@ -349,7 +352,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_responses: { Args: { _token: string }; Returns: number }
       claim_surveys: { Args: { _token: string }; Returns: number }
+      discover_polls: {
+        Args: { _category: string; _only_matching: boolean }
+        Returns: Json
+      }
       duplicate_survey: {
         Args: { _new_slug: string; _slug: string }
         Returns: string

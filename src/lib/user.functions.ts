@@ -2,6 +2,162 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+// ---------- Profile ----------
+
+const AGE_RANGES = ["under_18", "18_24", "25_34", "35_44", "45_54", "55_plus"] as const;
+
+const profileSchema = z.object({
+  display_name: z.string().trim().max(60).optional().nullable(),
+  age_range: z.enum(AGE_RANGES).nullable().optional(),
+  gender: z.string().trim().max(40).nullable().optional(),
+  location_region: z.string().trim().max(80).nullable().optional(),
+  amazon_tag: z.string().trim().max(60).nullable().optional(),
+  etsy_tag: z.string().trim().max(60).nullable().optional(),
+});
+
+export const getMyProfile = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("profiles")
+      .select("id, display_name, age_range, gender, location_region, amazon_tag, etsy_tag")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  });
+
+export const updateMyProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => profileSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("profiles")
+      .update({
+        display_name: data.display_name ?? null,
+        age_range: data.age_range ?? null,
+        gender: data.gender ?? null,
+        location_region: data.location_region ?? null,
+        amazon_tag: data.amazon_tag ?? null,
+        etsy_tag: data.etsy_tag ?? null,
+      })
+      .eq("id", context.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ---------- Audience ----------
+
+const audienceSchema = z.object({
+  survey_slug: z.string().min(1),
+  name: z.string().trim().min(1).max(80).optional(),
+  age_ranges: z.array(z.enum(AGE_RANGES)).max(6).optional(),
+  gender: z.string().trim().max(40).optional(),
+  location_contains: z.string().trim().max(80).optional(),
+});
+
+export const setSurveyAudience = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => audienceSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: survey, error: sErr } = await context.supabase
+      .from("surveys").select("id, user_id, title").eq("slug", data.survey_slug).maybeSingle();
+    if (sErr) throw new Error(sErr.message);
+    if (!survey) throw new Error("Survey not found");
+    if (survey.user_id !== context.userId) throw new Error("Not the owner of this survey");
+
+    const criteria: {
+      age_ranges?: string[];
+      gender?: string;
+      location_contains?: string;
+    } = {};
+    if (data.age_ranges?.length) criteria.age_ranges = data.age_ranges;
+    if (data.gender && data.gender !== "any") criteria.gender = data.gender;
+    if (data.location_contains) criteria.location_contains = data.location_contains;
+
+    // Delete previous audience link(s) for this survey; keep it simple (one audience per survey for now).
+    const { data: prev } = await context.supabase
+      .from("survey_audiences").select("audience_id").eq("survey_id", survey.id);
+    if (prev?.length) {
+      const ids = prev.map((r) => r.audience_id as string);
+      await context.supabase.from("survey_audiences").delete().eq("survey_id", survey.id);
+      await context.supabase.from("audiences").delete().in("id", ids).eq("owner_id", context.userId);
+    }
+
+    if (Object.keys(criteria).length === 0) return { ok: true };
+
+    const { data: aud, error: aErr } = await context.supabase
+      .from("audiences")
+      .insert({ owner_id: context.userId, name: data.name ?? survey.title, criteria: criteria as never })
+      .select("id").single();
+    if (aErr || !aud) throw new Error(aErr?.message ?? "Failed to save audience");
+    const { error: linkErr } = await context.supabase
+      .from("survey_audiences").insert({ survey_id: survey.id, audience_id: aud.id });
+    if (linkErr) throw new Error(linkErr.message);
+    return { ok: true };
+  });
+
+export const getSurveyAudience = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ survey_slug: z.string().min(1) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: survey } = await context.supabase
+      .from("surveys").select("id, user_id").eq("slug", data.survey_slug).maybeSingle();
+    if (!survey || survey.user_id !== context.userId) return null;
+    const { data: row } = await context.supabase
+      .from("survey_audiences")
+      .select("audience_id, audiences!inner(id, name, criteria)")
+      .eq("survey_id", survey.id)
+      .maybeSingle();
+    const aud = (row?.audiences as unknown) as { id: string; name: string; criteria: unknown } | null;
+    if (!aud) return null;
+    const c = (aud.criteria ?? {}) as {
+      age_ranges?: string[];
+      gender?: string;
+      location_contains?: string;
+    };
+    return {
+      id: aud.id,
+      name: aud.name,
+      age_ranges: c.age_ranges ?? [],
+      gender: c.gender ?? "",
+      location_contains: c.location_contains ?? "",
+    };
+  });
+
+// ---------- Discover ----------
+
+export const discoverPolls = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      only_matching: z.boolean().default(false),
+      category: z.string().trim().max(60).optional().nullable(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase.rpc("discover_polls", {
+      _only_matching: data.only_matching,
+      _category: data.category ?? "",
+    });
+    if (error) throw new Error(error.message);
+    return (rows as Array<{
+      slug: string; title: string; category: string | null; description: string | null;
+      created_at: string; response_count: number; match_reason: string | null;
+    }>) ?? [];
+  });
+
+// ---------- Claim anonymous responses ----------
+
+export const claimAnonResponses = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ token: z.string().min(8).max(128) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: count, error } = await context.supabase.rpc("claim_responses", { _token: data.token });
+    if (error) throw new Error(error.message);
+    return { claimed: (count ?? 0) as number };
+  });
+
 export const getMySurveys = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
