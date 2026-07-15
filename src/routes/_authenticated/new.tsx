@@ -14,6 +14,18 @@ import {
 } from "@/components/ui/select";
 import { getCreatorToken, rememberSurvey } from "@/lib/creator-token";
 import { createSurveyAsUser } from "@/lib/surveys.functions";
+import { setSurveyAudience } from "@/lib/user.functions";
+
+type AgeRange = "under_18" | "18_24" | "25_34" | "35_44" | "45_54" | "55_plus";
+
+const AGE_CHOICES: Array<{ v: AgeRange; label: string }> = [
+  { v: "under_18", label: "Under 18" },
+  { v: "18_24", label: "18–24" },
+  { v: "25_34", label: "25–34" },
+  { v: "35_44", label: "35–44" },
+  { v: "45_54", label: "45–54" },
+  { v: "55_plus", label: "55+" },
+];
 
 type QType = "rating" | "choice" | "text" | "yes_no" | "product_suggestion";
 type Draft = { type: QType; prompt: string; options: string };
@@ -32,6 +44,7 @@ export const Route = createFileRoute("/_authenticated/new")({
 function NewSurvey() {
   const navigate = useNavigate();
   const create = useServerFn(createSurveyAsUser);
+  const saveAudience = useServerFn(setSurveyAudience);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -39,6 +52,13 @@ function NewSurvey() {
   const [questions, setQuestions] = useState<Draft[]>([{ type: "rating", prompt: "", options: "" }]);
   const [affiliates, setAffiliates] = useState<AffDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [audienceAges, setAudienceAges] = useState<AgeRange[]>([]);
+  const [audienceGender, setAudienceGender] = useState("any");
+  const [audienceLocation, setAudienceLocation] = useState("");
+
+  function toggleAge(a: AgeRange) {
+    setAudienceAges((xs) => (xs.includes(a) ? xs.filter((x) => x !== a) : [...xs, a]));
+  }
 
   function updateQ(i: number, patch: Partial<Draft>) {
     setQuestions((qs) => qs.map((q, idx) => (idx === i ? { ...q, ...patch } : q)));
@@ -80,6 +100,24 @@ function NewSurvey() {
           affiliate_links: affClean.length ? affClean : undefined,
         },
       });
+      const hasAudience =
+        audienceAges.length > 0 ||
+        (audienceGender && audienceGender !== "any") ||
+        audienceLocation.trim().length > 0;
+      if (hasAudience) {
+        try {
+          await saveAudience({
+            data: {
+              survey_slug: created.slug,
+              age_ranges: audienceAges,
+              gender: audienceGender,
+              location_contains: audienceLocation.trim() || undefined,
+            },
+          });
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Audience save failed");
+        }
+      }
       rememberSurvey({ slug: created.slug, title: created.title, created_at: created.created_at });
       toast.success("Survey created — share the link!");
       navigate({ to: "/s/$slug", params: { slug: created.slug } });
@@ -173,6 +211,62 @@ function NewSurvey() {
           <Button type="button" variant="outline" className="w-full rounded-full" onClick={() => addQ()}>
             <Plus className="mr-1 h-4 w-4" aria-hidden="true" /> Add question
           </Button>
+        </section>
+
+        <section aria-labelledby="audience-heading" className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 id="audience-heading" className="text-lg font-semibold">
+              Audience <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+            </h2>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Who are you hoping answers this? We'll surface your poll in Discover to matching people. Leave blank for open to all.
+          </p>
+          <Card className="space-y-4 p-4">
+            <div className="space-y-1.5">
+              <Label>Age ranges</Label>
+              <div className="flex flex-wrap gap-2">
+                {AGE_CHOICES.map((a) => {
+                  const active = audienceAges.includes(a.v);
+                  return (
+                    <button
+                      key={a.v}
+                      type="button"
+                      onClick={() => toggleAge(a.v)}
+                      className={
+                        "rounded-full border px-3 py-1 text-xs font-medium transition-colors " +
+                        (active
+                          ? "border-transparent bg-gradient-brand text-white shadow-brand"
+                          : "border-border bg-background hover:bg-accent/40")
+                      }
+                    >
+                      {a.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="a-gender">Gender</Label>
+                <Select value={audienceGender} onValueChange={setAudienceGender}>
+                  <SelectTrigger id="a-gender"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any</SelectItem>
+                    <SelectItem value="woman">Women</SelectItem>
+                    <SelectItem value="man">Men</SelectItem>
+                    <SelectItem value="non-binary">Non-binary</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="a-loc">Location contains</Label>
+                <Input id="a-loc" placeholder="e.g. US, London, CA"
+                  maxLength={80} value={audienceLocation}
+                  onChange={(e) => setAudienceLocation(e.target.value)} />
+              </div>
+            </div>
+          </Card>
         </section>
 
         <section aria-labelledby="aff-heading" className="space-y-3">
