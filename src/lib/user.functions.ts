@@ -31,13 +31,16 @@ export const updateMyProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => profileSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const patch: Record<string, string | null> = {};
-    for (const [k, v] of Object.entries(data)) {
-      patch[k] = v === undefined ? null : (v as string | null);
-    }
     const { error } = await context.supabase
       .from("profiles")
-      .update(patch)
+      .update({
+        display_name: data.display_name ?? null,
+        age_range: data.age_range ?? null,
+        gender: data.gender ?? null,
+        location_region: data.location_region ?? null,
+        amazon_tag: data.amazon_tag ?? null,
+        etsy_tag: data.etsy_tag ?? null,
+      })
       .eq("id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -63,7 +66,11 @@ export const setSurveyAudience = createServerFn({ method: "POST" })
     if (!survey) throw new Error("Survey not found");
     if (survey.user_id !== context.userId) throw new Error("Not the owner of this survey");
 
-    const criteria: Record<string, unknown> = {};
+    const criteria: {
+      age_ranges?: string[];
+      gender?: string;
+      location_contains?: string;
+    } = {};
     if (data.age_ranges?.length) criteria.age_ranges = data.age_ranges;
     if (data.gender && data.gender !== "any") criteria.gender = data.gender;
     if (data.location_contains) criteria.location_contains = data.location_contains;
@@ -81,7 +88,7 @@ export const setSurveyAudience = createServerFn({ method: "POST" })
 
     const { data: aud, error: aErr } = await context.supabase
       .from("audiences")
-      .insert({ owner_id: context.userId, name: data.name ?? survey.title, criteria })
+      .insert({ owner_id: context.userId, name: data.name ?? survey.title, criteria: criteria as never })
       .select("id").single();
     if (aErr || !aud) throw new Error(aErr?.message ?? "Failed to save audience");
     const { error: linkErr } = await context.supabase
@@ -97,12 +104,25 @@ export const getSurveyAudience = createServerFn({ method: "POST" })
     const { data: survey } = await context.supabase
       .from("surveys").select("id, user_id").eq("slug", data.survey_slug).maybeSingle();
     if (!survey || survey.user_id !== context.userId) return null;
-    const { data } = await context.supabase
+    const { data: row } = await context.supabase
       .from("survey_audiences")
       .select("audience_id, audiences!inner(id, name, criteria)")
       .eq("survey_id", survey.id)
       .maybeSingle();
-    return (data?.audiences as unknown) as { id: string; name: string; criteria: Record<string, unknown> } | null;
+    const aud = (row?.audiences as unknown) as { id: string; name: string; criteria: unknown } | null;
+    if (!aud) return null;
+    const c = (aud.criteria ?? {}) as {
+      age_ranges?: string[];
+      gender?: string;
+      location_contains?: string;
+    };
+    return {
+      id: aud.id,
+      name: aud.name,
+      age_ranges: c.age_ranges ?? [],
+      gender: c.gender ?? "",
+      location_contains: c.location_contains ?? "",
+    };
   });
 
 // ---------- Discover ----------
