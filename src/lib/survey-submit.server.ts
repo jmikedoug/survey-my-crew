@@ -11,6 +11,7 @@ type SubmitAnswer = {
 type SubmitPayload = {
   slug: string;
   respondent_name?: string | null;
+  respondent_token?: string | null;
   answers: SubmitAnswer[];
 };
 
@@ -67,6 +68,7 @@ export async function submitSurveyResponse(
     id: responseId,
     survey_id: survey.id,
     respondent_name: data.respondent_name || null,
+    respondent_token: data.respondent_token || null,
     user_id: userId,
   });
   if (rErr) throw new Error(rErr.message);
