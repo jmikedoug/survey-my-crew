@@ -40,6 +40,16 @@ function AuthPage() {
 
   useEffect(() => {
     if (!loading && user) {
+      // Google/OAuth returns to window.location.origin, which drops our ?redirect=.
+      // We stashed it in sessionStorage below; restore & prefer it.
+      let dest = target;
+      if (typeof window !== "undefined") {
+        const stashed = sessionStorage.getItem("ppp.auth_redirect");
+        if (stashed && stashed.startsWith("/")) {
+          dest = stashed;
+          sessionStorage.removeItem("ppp.auth_redirect");
+        }
+      }
       // Best-effort claim of any anon surveys AND responses created on this device.
       supabase.rpc("claim_surveys", { _token: getCreatorToken() }).then(({ data }) => {
         if (typeof data === "number" && data > 0) toast.success(`Claimed ${data} earlier survey${data === 1 ? "" : "s"}.`);
@@ -47,7 +57,7 @@ function AuthPage() {
       supabase.rpc("claim_responses", { _token: getRespondentToken() }).then(({ data }) => {
         if (typeof data === "number" && data > 0) toast.success(`Linked ${data} earlier poll response${data === 1 ? "" : "s"} to your account.`);
       });
-      navigate({ to: target as string });
+      navigate({ to: dest as string });
     }
   }, [user, loading, navigate, target]);
 
@@ -77,6 +87,11 @@ function AuthPage() {
 
   async function onGoogle() {
     setBusy(true);
+    // Stash the desired post-auth destination — Google's redirect_uri must be
+    // a public same-origin URL, so we can't put ?redirect= there.
+    if (typeof window !== "undefined" && target && target.startsWith("/")) {
+      sessionStorage.setItem("ppp.auth_redirect", target);
+    }
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: typeof window !== "undefined" ? window.location.origin : undefined,
     });
