@@ -26,6 +26,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as SSlugResultsRouteImport } from './routes/s.$slug.results'
 import { Route as SSlugPrintRouteImport } from './routes/s.$slug.print'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicAffIdRouteImport } from './routes/api/public/aff.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -115,6 +116,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAffIdRoute = ApiPublicAffIdRouteImport.update({
   id: '/api/public/aff/$id',
   path: '/api/public/aff/$id',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/new': typeof AuthenticatedNewRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/s/$slug': typeof SSlugRouteWithChildren
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/new': typeof AuthenticatedNewRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/s/$slug': typeof SSlugRouteWithChildren
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/_authenticated/new': typeof AuthenticatedNewRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/s/$slug': typeof SSlugRouteWithChildren
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/profile'
     | '/s/$slug'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/s/$slug/print'
     | '/s/$slug/results'
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/profile'
     | '/s/$slug'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/s/$slug/print'
     | '/s/$slug/results'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/_authenticated/new'
     | '/_authenticated/profile'
     | '/s/$slug'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/s/$slug/print'
     | '/s/$slug/results'
@@ -251,6 +263,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   SSlugRoute: typeof SSlugRouteWithChildren
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicAffIdRoute: typeof ApiPublicAffIdRoute
 }
@@ -376,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/aff/$id': {
       id: '/api/public/aff/$id'
       path: '/api/public/aff/$id'
@@ -428,6 +448,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   SSlugRoute: SSlugRouteWithChildren,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicAffIdRoute: ApiPublicAffIdRoute,
 }
