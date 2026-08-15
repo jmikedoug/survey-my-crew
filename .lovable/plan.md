@@ -1,79 +1,51 @@
-## What you've said we'd do "later" — recap
+# Migrate Poll-Your-People off Lovable
 
-**Slice 6 — Audience targeting foundations** (from `.lovable/plan.md`)
-- `audiences` table, `survey_audiences` join, demographic opt-in fields on `profiles`
-- `/discover` route for signed-in users to answer polls matched to them
-- No paid panels — opt-in matching among app users only
+Goal: own the code on GitHub, own the database in your own Supabase account, host on Vercel or Netlify. Fresh start on data (schema only, no rows carried over).
 
-**Slice 5 leftovers — AI product matching polish**
-- `product_suggestion` question type end-to-end in the respondent UI
-- Affiliate override on Amazon/Etsy using `profiles.amazon_tag` / `etsy_tag`
-- Product cards on the results page, click-tracked
+## What can and can't move
 
-**Anonymous → account nudges**
-- Post-submit "Create an account to save this poll" prompt
-- Claim-legacy-surveys UI on first sign-in (server fn already exists)
+- **Code**: fully portable. Git sync pushes the whole repo to GitHub; nothing about it is Lovable-specific except a few build/config packages listed below.
+- **Database**: the current backend is a Lovable-managed Supabase project. It can't be transferred into your account, and privileged credentials (service role key, DB password) aren't exposed here. Instead we recreate the schema in a Supabase project you own — you'll have the dashboard and all keys there.
 
-**Other parked polish** (not selected — noted for later)
-- CSV/PDF export UI polish
-- Category browse UX beyond current results
+## Step 1 — GitHub
 
----
+Connect GitHub from the chat "+" menu → GitHub → Connect project, and create the repo. Sync is two-way, so you can keep editing here or locally until you cut over.
 
-## This iteration — three shippable slices
+## Step 2 — Your own Supabase project
 
-### Slice A · Audience targeting v1 (minimal + browse+filter + optional profile)
+You create a project at supabase.com. I prepare a single consolidated `supabase/migrations/00000000000000_init.sql` that recreates everything, in dependency order:
 
-**Profile page**
-- New route `/_authenticated/profile` — form with three nullable fields: `age_range` (enum: under_18 / 18_24 / 25_34 / 35_44 / 45_54 / 55_plus), `gender` (free-text short + "prefer not to say"), `location_region` (free-text, e.g. "US-CA", "UK", etc.)
-- Save via `updateMyProfile` server fn (`requireSupabaseAuth`)
-- Nav gets a "Profile" link in the avatar menu
+- Enums: `question_type`
+- Tables: `profiles`, `surveys`, `questions`, `responses`, `answers`, `affiliate_links`, `affiliate_clicks`, `audiences`, `survey_audiences` — with GRANTs, RLS enabled, and every current policy
+- Functions: `handle_new_user`, `touch_updated_at`, `claim_surveys`, `claim_responses`, `duplicate_survey`, `get_survey_results`, `discover_polls` (with the same `SECURITY DEFINER` / `search_path` / EXECUTE-revoke hardening)
+- Triggers: `on_auth_user_created`, `profiles_updated_at`, `audiences_updated_at`
 
-**Audience builder (creator side)**
-- Add "Audience" step to `/new` (optional): pick target age ranges (multi), gender (any/specific), location contains (free-text substring). Stored as one `audiences` row + `survey_audiences` link with the new survey
-- Existing `audiences` / `survey_audiences` tables already exist — add columns if missing (`age_ranges text[]`, `gender text`, `location_contains text`) and RLS/GRANTs
+You run it with `supabase db push` (or paste into the SQL editor). Then enable Email and Google providers in your project's Auth settings and add your Google OAuth client.
 
-**Discover feed (browse + filter)**
-- `/_authenticated/discover` becomes real: category tabs across top (All, Beauty, Food, Tech, …) + toggle "Only polls looking for me"
-- When toggle is on, filter by matching `survey_audiences` criteria against caller's profile (via a `discover_polls` RPC). When off, show recent public polls
-- Empty state when profile is incomplete: "Fill in your profile to see polls looking for you" → link to /profile
+## Step 3 — De-Lovable the app code
 
-**Why**: matches your answers — minimal fields, category browse, optional profile, no forced onboarding. Ships value even for users who never fill out demographics (they just see recent polls).
+Replace the pieces that only work inside Lovable:
 
-### Slice B · Product suggestion polish
+- `src/integrations/lovable/*` Google sign-in broker → plain `supabase.auth.signInWithOAuth('google', { redirectTo })` in `src/routes/auth.tsx`.
+- `src/integrations/supabase/client.ts` and `client.server.ts` are generated files; convert them into normal committed files reading `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` and server-side `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`.
+- **Lovable AI Gateway** powers AI product matching (`src/lib/product-matching.functions.ts`) and depends on `LOVABLE_API_KEY`, which does not travel. Swap to a direct provider key (OpenAI or Google Gemini) that you own, read from `process.env` inside the handler.
+- **Agent integrations (MCP)** at `/mcp` rely on the Lovable MCP plugin and Lovable's OAuth server. Decision point: either drop MCP for the initial cutover (simplest), or re-implement OAuth against your own Supabase authorization server later. Plan assumes drop-and-revisit unless you say otherwise.
+- `vite.config.ts` uses `@lovable.dev/vite-tanstack-config`, which bundles TanStack Start, React, Tailwind, tsconfig paths and Nitro. Replace with a plain `vite.config.ts` composing those plugins directly, and target the Node/Vercel preset instead of Cloudflare Workers.
+- Remove `componentTagger` / sandbox-specific behaviour that came from that config package.
 
-- Respondent flow for `product_suggestion` questions:
-  - Text input → debounced "Find matches" button → server fn `suggestProductMatches` (Lovable AI Gateway, gemini-2.5-flash, strict JSON schema)
-  - Show up to 5 candidate cards; user picks one, or "None — use my link" (URL field), or "Skip"
-  - Store choice in `answers` (title, suggested_url)
-- Results page renders "Suggested products" as clickable cards linking through `/api/public/aff/$id` (creates `affiliate_links` rows on the fly per unique URL+survey)
-- Affiliate override already lives in `survey-submit.server.ts` — verify it fires and add tests via Playwright
+## Step 4 — Hosting on Vercel or Netlify
 
-**Why**: the schema is there but the respondent-side UX is stubbed. This closes the loop and makes the affiliate revenue path real.
+- Add a Nitro preset for the host (`vercel` or `netlify`) in the new vite config.
+- Env vars to set in the host dashboard: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, plus your AI provider key.
+- Move the `pyp.jmikedoug.com` DNS to the new host once the deploy is green, and add that origin to Supabase Auth redirect URLs.
+- I'll add a `README.md` with local setup (`bun install`, `.env.example`, `supabase db push`, `bun dev`) so the repo stands on its own.
 
-### Slice C · Anonymous → account conversion
+## Verification
 
-- After a signed-out respondent submits, show a soft banner on the thanks screen: "Create an account to save your poll history and get matched to more polls" → CTA to `/auth?redirect=/history`
-- On first sign-in, if `localStorage.creator_token` exists, quietly call `claimAnonSurveys({ token })` and toast "Claimed N surveys you made before signing in"
-- Add same claim call for anonymous responses: store a `respondent_token` in localStorage per submit (like creator_token), and add `claim_responses(_token)` RPC + server fn that fills `responses.user_id` on first sign-in
+- Local run against your Supabase: sign up with email, sign in with Google, create a poll, submit it anonymously in a private window, view results, duplicate, export CSV.
+- Confirm RLS still blocks cross-user reads (a second account cannot see the first's surveys or profile).
 
-**Why**: converts drive-by respondents/creators into accounts without gating the public flow.
+## Notes
 
----
-
-## Technical notes
-
-- New RPC `discover_polls(_only_matching bool, _category text)` — SECURITY DEFINER, joins `surveys` + `survey_audiences` + `audiences` + caller's `profiles`, returns `{slug, title, category, response_count, match_reason}`. `SET search_path = public`.
-- New RPC `claim_responses(_token text)` — matches SECURITY DEFINER pattern used by `claim_surveys`.
-- All new columns/tables: GRANT + RLS in the same migration. `audiences` policies: owner-only. `profiles` demographic columns keep existing RLS (already scoped to `auth.uid()`).
-- No new external secrets. Product matching uses existing `LOVABLE_API_KEY`.
-- Discover uses `useSuspenseQuery` + loader `ensureQueryData` under `_authenticated/` (safe to call protected server fns there).
-
-## Order of execution
-
-1. Migration: profile demographic columns, `audiences`/`survey_audiences` column additions, `discover_polls` + `claim_responses` RPCs, RLS/GRANTs
-2. Slice A: `/profile`, audience step in `/new`, real `/discover`
-3. Slice B: respondent product_suggestion UI, results product cards, affiliate verification
-4. Slice C: post-submit account nudge, auto-claim on sign-in for both surveys and responses
-
-Tell me to start, or say "skip B" / "just A" / "reorder" and I'll re-plan.
+- Nothing in this plan deletes the Lovable project — it keeps working until you switch DNS, so you can roll back.
+- Existing poll data stays here. If you later want it, request an export in More → Cloud → Advanced settings and we can import it.
