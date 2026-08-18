@@ -49,7 +49,13 @@ type Candidate = { id: string; title: string; brand?: string; category?: string;
 export const suggestProductMatches = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => suggestInput.parse(input))
   .handler(async ({ data }): Promise<{ candidates: Candidate[] }> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
+    // Provider-agnostic: any OpenAI-compatible chat-completions endpoint works.
+    // Defaults to the Lovable AI Gateway; set AI_API_KEY/AI_BASE_URL/AI_MODEL to
+    // point at your own provider (OpenAI, Gemini's OpenAI-compat endpoint, etc.)
+    // when self-hosting.
+    const apiKey = process.env.AI_API_KEY || process.env.LOVABLE_API_KEY;
+    const baseUrl = process.env.AI_BASE_URL || "https://ai.gateway.lovable.dev/v1";
+    const model = process.env.AI_MODEL || "google/gemini-2.5-flash";
     if (!apiKey) return { candidates: [] };
 
     const system = `You suggest real, popular product matches for a shopper's short description.
@@ -57,14 +63,14 @@ Return 3-5 candidates. Each must include a plausible product URL (prefer amazon.
 Never invent URLs on unrelated domains.`;
 
     try {
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model,
           messages: [
             { role: "system", content: system },
             { role: "user", content: `Product the user typed: "${data.query}"` },
