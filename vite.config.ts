@@ -11,6 +11,15 @@ import tailwindcss from "@tailwindcss/vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 import { nitro } from "nitro/vite";
 
+// Lovable/Cloudflare hosting expects the build output in ./dist.
+// Other presets (vercel, netlify, node-server) must keep their own default
+// output location, otherwise the host finds no functions/assets and 404s.
+const preset = process.env.NITRO_PRESET || "cloudflare_module";
+const nitroOptions =
+  preset === "cloudflare_module"
+    ? { preset, output: { dir: "dist" } }
+    : { preset };
+
 export default defineConfig({
   plugins: [
     tsConfigPaths({ projects: ["./tsconfig.json"] }),
@@ -18,12 +27,7 @@ export default defineConfig({
     tanstackStart({ server: { entry: "server" } }),
     viteReact(),
     // preset: "vercel" | "netlify" | "node-server"
-    nitro({
-      // Lovable/Cloudflare hosting expects the build output in ./dist.
-      // For self-hosting set NITRO_PRESET=vercel | netlify | node-server.
-      preset: process.env.NITRO_PRESET || "cloudflare_module",
-      output: { dir: "dist" },
-    }),
+    nitro(nitroOptions),
   ],
   resolve: { dedupe: ["react", "react-dom"] },
   server: { port: 8080 },
