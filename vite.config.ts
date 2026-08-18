@@ -18,7 +18,12 @@ export default defineConfig({
     tanstackStart({ server: { entry: "server" } }),
     viteReact(),
     // preset: "vercel" | "netlify" | "node-server"
-    nitro({ preset: process.env.NITRO_PRESET || "vercel" }),
+    nitro({
+      // Lovable/Cloudflare hosting expects the build output in ./dist.
+      // For self-hosting set NITRO_PRESET=vercel | netlify | node-server.
+      preset: process.env.NITRO_PRESET || "cloudflare_module",
+      output: { dir: "dist" },
+    }),
   ],
   resolve: { dedupe: ["react", "react-dom"] },
   server: { port: 8080 },
