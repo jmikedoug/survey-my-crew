@@ -18,7 +18,7 @@ export default defineConfig({
     tanstackStart({ server: { entry: "server" } }),
     viteReact(),
     // preset: "vercel" | "netlify" | "node-server"
-    nitro({ config: { preset: process.env.NITRO_PRESET || "vercel" } }),
+    nitro({ preset: process.env.NITRO_PRESET || "vercel" }),
   ],
   resolve: { dedupe: ["react", "react-dom"] },
   server: { port: 8080 },

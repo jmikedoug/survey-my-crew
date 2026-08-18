@@ -19,7 +19,8 @@ export const lovable = {
         return { error: new Error("Provider not available outside Lovable") };
       }
       const { error } = await supabase.auth.signInWithOAuth({
-        provider,
+        // Supabase names the Microsoft provider "azure".
+        provider: provider === "microsoft" ? "azure" : provider,
         options: {
           redirectTo:
             opts?.redirect_uri ??
