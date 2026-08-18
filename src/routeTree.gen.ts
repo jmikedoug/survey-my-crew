@@ -15,7 +15,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
 import { Route as AuthenticatedMineRouteImport } from './routes/_authenticated/mine'
@@ -55,9 +55,9 @@ const SSlugRoute = SSlugRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
-  getParentRoute: () => AuthRoute,
+  id: '/auth_/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
@@ -103,7 +103,7 @@ const ApiPublicAffIdRoute = ApiPublicAffIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/discover': typeof AuthenticatedDiscoverRoute
   '/history': typeof AuthenticatedHistoryRoute
@@ -119,7 +119,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/discover': typeof AuthenticatedDiscoverRoute
   '/history': typeof AuthenticatedHistoryRoute
@@ -137,14 +137,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/discover': typeof AuthenticatedDiscoverRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/mine': typeof AuthenticatedMineRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/auth/callback': typeof AuthCallbackRoute
+  '/auth_/callback': typeof AuthCallbackRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
@@ -195,7 +195,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mine'
     | '/_authenticated/new'
     | '/_authenticated/profile'
-    | '/auth/callback'
+    | '/auth_/callback'
     | '/s/$slug'
     | '/s/$slug/print'
     | '/s/$slug/results'
@@ -206,8 +206,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
-  AuthRoute: typeof AuthRouteWithChildren
+  AuthRoute: typeof AuthRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   SSlugRoute: typeof SSlugRouteWithChildren
   ApiPublicAffIdRoute: typeof ApiPublicAffIdRoute
 }
@@ -256,12 +257,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/callback'
+    '/auth_/callback': {
+      id: '/auth_/callback'
+      path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof AuthRoute
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
@@ -341,16 +342,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface AuthRouteChildren {
-  AuthCallbackRoute: typeof AuthCallbackRoute
-}
-
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthCallbackRoute: AuthCallbackRoute,
-}
-
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
-
 interface SSlugRouteChildren {
   SSlugPrintRoute: typeof SSlugPrintRoute
   SSlugResultsRoute: typeof SSlugResultsRoute
@@ -367,8 +358,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
-  AuthRoute: AuthRouteWithChildren,
+  AuthRoute: AuthRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   SSlugRoute: SSlugRouteWithChildren,
   ApiPublicAffIdRoute: ApiPublicAffIdRoute,
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { describeAuthError } from "@/lib/auth-errors";
 
-export const Route = createFileRoute("/auth/callback")({
+export const Route = createFileRoute("/auth_/callback")({
   ssr: false,
   head: () => ({
     meta: [
