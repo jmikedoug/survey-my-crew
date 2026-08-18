@@ -9,7 +9,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsConfigPaths from "vite-tsconfig-paths";
-import nitro from "nitro/vite";
+import { nitro } from "nitro/vite";
 
 export default defineConfig({
   plugins: [
@@ -18,7 +18,7 @@ export default defineConfig({
     tanstackStart({ server: { entry: "server" } }),
     viteReact(),
     // preset: "vercel" | "netlify" | "node-server"
-    nitro({ config: { preset: process.env.NITRO_PRESET || "vercel" } }),
+    nitro({ preset: process.env.NITRO_PRESET || "vercel" }),
   ],
   resolve: { dedupe: ["react", "react-dom"] },
   server: { port: 8080 },
