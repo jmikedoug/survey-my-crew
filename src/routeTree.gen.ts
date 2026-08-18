@@ -15,6 +15,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SSlugRouteImport } from './routes/s.$slug'
+import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
 import { Route as AuthenticatedMineRouteImport } from './routes/_authenticated/mine'
@@ -51,6 +52,11 @@ const IndexRoute = IndexRouteImport.update({
 const SSlugRoute = SSlugRouteImport.update({
   id: '/s/$slug',
   path: '/s/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth_/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/mine': typeof AuthenticatedMineRoute
   '/new': typeof AuthenticatedNewRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/mine': typeof AuthenticatedMineRoute
   '/new': typeof AuthenticatedNewRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/_authenticated/mine': typeof AuthenticatedMineRoute
   '/_authenticated/new': typeof AuthenticatedNewRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/auth_/callback': typeof AuthCallbackRoute
   '/s/$slug': typeof SSlugRouteWithChildren
   '/s/$slug/print': typeof SSlugPrintRoute
   '/s/$slug/results': typeof SSlugResultsRoute
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/mine'
     | '/new'
     | '/profile'
+    | '/auth/callback'
     | '/s/$slug'
     | '/s/$slug/print'
     | '/s/$slug/results'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/mine'
     | '/new'
     | '/profile'
+    | '/auth/callback'
     | '/s/$slug'
     | '/s/$slug/print'
     | '/s/$slug/results'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mine'
     | '/_authenticated/new'
     | '/_authenticated/profile'
+    | '/auth_/callback'
     | '/s/$slug'
     | '/s/$slug/print'
     | '/s/$slug/results'
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   SSlugRoute: typeof SSlugRouteWithChildren
   ApiPublicAffIdRoute: typeof ApiPublicAffIdRoute
 }
@@ -242,6 +255,13 @@ declare module '@tanstack/react-router' {
       path: '/s/$slug'
       fullPath: '/s/$slug'
       preLoaderRoute: typeof SSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth_/callback': {
+      id: '/auth_/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/profile': {
@@ -340,6 +360,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   SSlugRoute: SSlugRouteWithChildren,
   ApiPublicAffIdRoute: ApiPublicAffIdRoute,
 }

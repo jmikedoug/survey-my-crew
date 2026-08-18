@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/lib/use-auth";
 import { getCreatorToken, getRespondentToken } from "@/lib/creator-token";
+import { CONFIG_HINT, describeAuthError, isBackendConfigError } from "@/lib/auth-errors";
 
 const searchSchema = z.object({ redirect: z.string().optional() }).partial();
 
@@ -35,6 +36,23 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [busy, setBusy] = useState(false);
+  const [configError, setConfigError] = useState(false);
+
+  // One-time probe: if the deployment's backend key is rejected, say so up front.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth
+      .getSession()
+      .then(({ error }) => {
+        if (!cancelled && error && isBackendConfigError(error)) setConfigError(true);
+      })
+      .catch((e) => {
+        if (!cancelled && isBackendConfigError(e)) setConfigError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const target = typeof search.redirect === "string" && search.redirect.startsWith("/") ? search.redirect : "/mine";
 
@@ -66,7 +84,10 @@ function AuthPage() {
     setBusy(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
-    if (error) toast.error(error.message);
+    if (error) {
+      if (isBackendConfigError(error)) setConfigError(true);
+      toast.error(describeAuthError(error));
+    }
   }
 
   async function onSignUp(e: React.FormEvent) {
@@ -81,7 +102,10 @@ function AuthPage() {
       },
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (isBackendConfigError(error)) setConfigError(true);
+      return toast.error(describeAuthError(error));
+    }
     toast.success("Check your email to confirm your account.");
   }
 
@@ -93,9 +117,13 @@ function AuthPage() {
       sessionStorage.setItem("ppp.auth_redirect", target);
     }
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: typeof window !== "undefined" ? window.location.origin : undefined,
+      redirect_uri:
+        typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined,
     });
-    if (result.error) toast.error(result.error.message ?? "Google sign-in failed");
+    if (result.error) {
+      if (isBackendConfigError(result.error)) setConfigError(true);
+      toast.error(describeAuthError(result.error) || "Google sign-in failed");
+    }
     setBusy(false);
   }
 
@@ -106,6 +134,12 @@ function AuthPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Sign in to save your surveys and the polls you take.
         </p>
+
+        {configError && (
+          <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+            {CONFIG_HINT}
+          </div>
+        )}
 
         <Button
           type="button"
