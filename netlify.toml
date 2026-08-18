@@ -1,0 +1,10 @@
+# Netlify config for self-hosting Poll-Your-People.
+# Nitro's netlify preset emits static files to dist/ and the SSR handler to
+# .netlify/functions-internal/, so the publish dir must be dist/ (NOT the
+# Cloudflare-style single dist bundle used on Lovable hosting).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NITRO_PRESET = "netlify"
