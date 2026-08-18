@@ -69,7 +69,7 @@ authorization server. Delete these when you move:
 src/routes/mcp.ts
 src/routes/[.mcp]/
 src/routes/[.well-known]/oauth-protected-resource.ts
-src/routes/[.lovable.oauth.consent].tsx  (the consent route)
+src/routes/[.]lovable.oauth.consent.tsx
 src/lib/mcp/
 ```
 
